@@ -19,7 +19,28 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "studypulse_secure_login_2026_navya_8392";
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://241fa04a83_db_user:NavyaGowtham17@cluster0.h8zmijn.mongodb.net/studypulse?retryWrites=true&w=majority";
+const DIRECT_MONGO_URI = "mongodb://241fa04a83_db_user:NavyaGowtham17@ac-5oxpa9y-shard-00-00.h8zmijn.mongodb.net:27017,ac-5oxpa9y-shard-00-01.h8zmijn.mongodb.net:27017,ac-5oxpa9y-shard-00-02.h8zmijn.mongodb.net:27017/studypulse?ssl=true&replicaSet=atlas-5nohlk-shard-0&authSource=admin&retryWrites=true&w=majority";
+const MONGO_URI = (process.env.MONGO_URI && !process.env.MONGO_URI.includes("<username>")) ? process.env.MONGO_URI : DIRECT_MONGO_URI;
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+    return;
+  }
+  try {
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 8000 });
+    console.log("MongoDB Connected Successfully!");
+  } catch (err) {
+    console.error("MongoDB Primary connection failed, attempting Direct URI fallback:", err.message);
+    if (MONGO_URI !== DIRECT_MONGO_URI) {
+      try {
+        await mongoose.connect(DIRECT_MONGO_URI, { serverSelectionTimeoutMS: 8000 });
+        console.log("MongoDB Connected Successfully via Direct URI!");
+      } catch (fallbackErr) {
+        console.error("MongoDB Direct URI fallback failed:", fallbackErr.message);
+      }
+    }
+  }
+};
 
 const app = express();
 
@@ -30,8 +51,19 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// RECONNECT DATABASE IF DISCONNECTED
+app.use("/api", async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    await connectDB();
+  }
+  next();
+});
+
 // HEALTH CHECK
-app.get("/health", (req, res) => {
+app.get("/health", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    await connectDB();
+  }
   const states = ["disconnected", "connected", "connecting", "disconnecting"];
   res.json({
     status: "ok",
@@ -347,13 +379,7 @@ app.delete("/api/tasks/:id", verifyToken, async (req, res) => {
 // DATABASE CONNECTION & SERVER START
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log("MongoDB Connected Successfully!");
-  })
-  .catch(error => {
-    console.error("MongoDB Connection Error:", error);
-  });
+connectDB();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
