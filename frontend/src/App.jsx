@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://studypulse-zqjh.onrender.com");
+const API = import.meta.env.DEV ? "http://localhost:5000" : "https://studypulse-zqjh.onrender.com";
 
 function App() {
   const [user, setUser] = useState(
