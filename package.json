@@ -1,0 +1,14 @@
+{
+  "name": "studypulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StudyPulse - Fullstack MERN Student Task & Productivity Manager",
+  "scripts": {
+    "frontend:install": "npm --prefix frontend install",
+    "backend:install": "npm --prefix backend install",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "backend:start": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev"
+  }
+}
