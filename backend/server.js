@@ -1,9 +1,11 @@
 
-try {
-  const dns = require("dns");
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
-} catch (e) {
-  // Ignore DNS setServers error in restricted hosting environments
+if (process.env.NODE_ENV !== "production") {
+  try {
+    const dns = require("dns");
+    dns.setServers(["8.8.8.8", "8.8.4.4"]);
+  } catch (e) {
+    // Ignore DNS setServers error in restricted hosting environments
+  }
 }
 
 const path = require("path");
@@ -16,6 +18,9 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const JWT_SECRET = process.env.JWT_SECRET || "studypulse_secure_login_2026_navya_8392";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://241fa04a83_db_user:NavyaGowtham17@cluster0.h8zmijn.mongodb.net/studypulse?retryWrites=true&w=majority";
+
 const app = express();
 
 app.use(cors({
@@ -27,7 +32,14 @@ app.use(express.json());
 
 // HEALTH CHECK
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  const states = ["disconnected", "connected", "connecting", "disconnecting"];
+  res.json({
+    status: "ok",
+    mongoConnected: mongoose.connection.readyState === 1,
+    mongoState: states[mongoose.connection.readyState] || "unknown",
+    hasMongoUri: Boolean(process.env.MONGO_URI),
+    timestamp: new Date().toISOString()
+  });
 });
 
 // USER MODEL
@@ -161,7 +173,7 @@ app.post("/api/login", async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: "1d" }
     );
 
@@ -193,7 +205,7 @@ const verifyToken = (req, res, next) => {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET
+      JWT_SECRET
     );
 
     req.user = decoded;
@@ -335,17 +347,13 @@ app.delete("/api/tasks/:id", verifyToken, async (req, res) => {
 // DATABASE CONNECTION & SERVER START
 const PORT = process.env.PORT || 5000;
 
-if (!process.env.MONGO_URI) {
-  console.error("Warning: MONGO_URI is not set in environment variables!");
-} else {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-      console.log("MongoDB Connected Successfully!");
-    })
-    .catch(error => {
-      console.error("MongoDB Connection Error:", error);
-    });
-}
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Connected Successfully!");
+  })
+  .catch(error => {
+    console.error("MongoDB Connection Error:", error);
+  });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

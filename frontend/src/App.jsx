@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "");
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://studypulse-zqjh.onrender.com");
 
 function App() {
   const [user, setUser] = useState(
@@ -32,7 +32,12 @@ function App() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = { message: "Server returned non-JSON response" };
+      }
 
       if (!response.ok) {
         alert(data.message || "Login failed");
@@ -49,7 +54,7 @@ function App() {
 
       setUser(userData);
     } catch (error) {
-      alert("Server connection failed!");
+      alert(error.message || "Server connection failed!");
     }
   };
 
@@ -64,7 +69,12 @@ function App() {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = { message: "Server returned non-JSON response" };
+      }
 
       if (response.ok) {
         alert("Account created successfully! Please login.");
@@ -76,7 +86,7 @@ function App() {
         alert(data.message || "Signup failed");
       }
     } catch (error) {
-      alert("Server connection failed!");
+      alert(error.message || "Server connection failed!");
     }
   };
 
